@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mashup Wedding – Hướng dẫn tập đàn</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f0e8; color: #333; }
+
+  header {
+    background: linear-gradient(135deg, #2c3e50, #3498db);
+    color: white; padding: 24px 32px;
+    display: flex; align-items: center; gap: 20px;
+  }
+  header h1 { font-size: 26px; }
+  header p { font-size: 14px; opacity: 0.85; margin-top: 4px; }
+  .badge { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 12px; font-size: 13px; white-space: nowrap; }
+
+  .layout { display: flex; gap: 0; }
+
+  /* ── LEFT: sheet music ── */
+  .sheet-panel {
+    flex: 1 1 55%;
+    background: white;
+    padding: 20px;
+    border-right: 2px solid #ddd;
+    overflow-y: auto;
+    max-height: calc(100vh - 88px);
+    position: sticky;
+    top: 0;
+  }
+  .sheet-panel h2 { font-size: 15px; color: #666; margin-bottom: 12px; text-align: center; }
+  .page-tabs { display: flex; gap: 8px; margin-bottom: 14px; justify-content: center; }
+  .page-tabs button {
+    padding: 6px 18px; border: 2px solid #3498db; background: white;
+    color: #3498db; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 600;
+    transition: all .2s;
+  }
+  .page-tabs button.active, .page-tabs button:hover { background: #3498db; color: white; }
+  .page-img { display: none; }
+  .page-img.active { display: block; }
+  .page-img img { width: 100%; border: 1px solid #eee; border-radius: 4px; }
+
+  /* ── RIGHT: reference ── */
+  .ref-panel {
+    flex: 0 0 45%;
+    padding: 20px;
+    overflow-y: auto;
+    max-height: calc(100vh - 88px);
+  }
+
+  .section-block {
+    background: white;
+    border-radius: 12px;
+    border-left: 5px solid #3498db;
+    margin-bottom: 18px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,.07);
+  }
+  .section-block.green { border-color: #27ae60; }
+  .section-block.orange { border-color: #e67e22; }
+
+  .section-header {
+    background: #eaf4fd; padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+    cursor: pointer; user-select: none;
+  }
+  .section-block.green .section-header { background: #eafaf1; }
+  .section-block.orange .section-header { background: #fef5e7; }
+
+  .section-header h3 { font-size: 14px; color: #2c3e50; }
+  .section-header .meta { font-size: 12px; color: #666; display: flex; gap: 10px; }
+  .section-header .meta span { background: #dde; border-radius: 4px; padding: 2px 8px; }
+  .section-block.green .section-header .meta span { background: #d4efdf; }
+  .section-block.orange .section-header .meta span { background: #fde3c8; }
+  .chevron { font-size: 12px; transition: transform .25s; }
+
+  .section-body { padding: 14px 16px; display: none; }
+  .section-body.open { display: block; }
+
+  /* chord grid */
+  .chord-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .chord-card {
+    border: 1.5px solid #e0e0e0;
+    border-radius: 10px; overflow: hidden;
+    cursor: pointer; transition: box-shadow .15s, transform .15s;
+  }
+  .chord-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.12); transform: translateY(-2px); }
+  .chord-card.active { border-color: #3498db; box-shadow: 0 0 0 3px rgba(52,152,219,.25); }
+  .chord-name {
+    background: #2c3e50; color: white;
+    text-align: center; padding: 5px 8px;
+    font-weight: 700; font-size: 14px;
+  }
+  .section-block.green .chord-name { background: #1e8449; }
+  .section-block.orange .chord-name { background: #d35400; }
+  .chord-notes {
+    padding: 6px 8px;
+    font-size: 11.5px;
+    line-height: 1.6;
+  }
+  .chord-notes .row { display: flex; justify-content: space-between; gap: 4px; }
+  .chord-notes .label { color: #888; font-size: 10.5px; }
+  .chord-notes .vn { font-weight: 600; color: #2c3e50; }
+  .chord-notes .en { color: #666; }
+
+  /* beat box */
+  .beat-guide {
+    background: #f8f9fa; border-radius: 8px;
+    padding: 12px 14px; margin-top: 4px;
+  }
+  .beat-guide h4 { font-size: 12px; color: #555; margin-bottom: 8px; }
+  .beat-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+  .beat {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; color: white;
+    background: #bdc3c7;
+  }
+  .beat.strong { background: #e74c3c; }
+  .beat.medium { background: #e67e22; }
+  .beat.weak { background: #95a5a6; }
+  .beat-label { font-size: 11px; color: #666; margin-top: 2px; }
+
+  /* keyboard viz */
+  .piano-wrap { margin-top: 12px; }
+  .piano-wrap h4 { font-size: 12px; color: #555; margin-bottom: 6px; }
+  .piano-svg { width: 100%; }
+
+  /* voice leading – fingering layout */
+  .vl-section { margin-bottom: 18px; }
+  .vl-section h4 { font-size: 12.5px; color: #555; margin-bottom: 10px; font-weight: 600; }
+  .vl-flow { display: flex; align-items: center; gap: 0; overflow-x: auto; padding-bottom: 6px; }
+  .fc-card {
+    border-radius: 10px; overflow: hidden;
+    border: 2px solid #2c3e50; min-width: 80px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.1);
+  }
+  .fc-card.green { border-color: #1e8449; }
+  .fc-card.orange { border-color: #d35400; }
+  .fc-name {
+    background: #2c3e50; color: white;
+    text-align: center; padding: 5px 8px;
+    font-size: 13px; font-weight: 700; line-height: 1.3;
+  }
+  .fc-card.green .fc-name { background: #1e8449; }
+  .fc-card.orange .fc-name { background: #d35400; }
+  .fc-inv { display: block; font-size: 9.5px; font-weight: 400; opacity: .85; }
+  .fc-fingers { background: #f8f9fa; padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
+  .fc-row {
+    display: flex; align-items: center; gap: 5px;
+    background: white; border-radius: 5px; border: 1.5px solid #ddd;
+    padding: 3px 6px;
+  }
+  .fc-row.fixed { border-color: #27ae60; background: #eafaf1; }
+  .fn-num {
+    font-size: 13px; font-weight: 800; width: 16px; text-align: center;
+    color: #2c3e50; flex-shrink: 0;
+  }
+  .fc-row.fixed .fn-num { color: #1e8449; }
+  .fn-name { font-size: 9px; color: #aaa; width: 26px; flex-shrink: 0; }
+  .fc-row.fixed .fn-name { color: #27ae60; }
+  .fn-note { font-size: 12px; font-weight: 600; color: #2c3e50; white-space: nowrap; }
+  .fc-row.fixed .fn-note { color: #1e8449; }
+  .fc-arr { font-size: 20px; color: #bbb; padding: 0 4px; flex-shrink: 0; }
+
+  /* tips */
+  .tip-box {
+    background: #fff3cd; border-left: 4px solid #ffc107;
+    border-radius: 0 8px 8px 0; padding: 10px 14px;
+    font-size: 12.5px; line-height: 1.6; margin-bottom: 14px;
+  }
+  .tip-box strong { color: #856404; }
+
+  @media (max-width: 800px) {
+    .layout { flex-direction: column; }
+    .sheet-panel { position: relative; max-height: none; border-right: none; border-bottom: 2px solid #ddd; }
+    .ref-panel { max-height: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>🎹 Mashup Wedding</h1>
+    <p>Biên soạn: Hoàng Nam &nbsp;·&nbsp; Hướng dẫn tập đàn piano</p>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-left:auto;">
+    <span class="badge">♩ = 95 / 65</span>
+    <span class="badge">4/4</span>
+    <span class="badge">75 ô nhịp</span>
+  </div>
+</header>
+
+<div class="layout">
+
+<!-- ═══════════════ LEFT: Sheet music ═══════════════ -->
+<div class="sheet-panel">
+  <h2>📄 Bản nhạc</h2>
+  <div class="page-tabs">
+    <button class="active" onclick="showPage(1,this)">Trang 1</button>
+    <button onclick="showPage(2,this)">Trang 2</button>
+    <button onclick="showPage(3,this)">Trang 3</button>
+  </div>
+  <div id="pg1" class="page-img active"><img src="page_1.png" alt="Trang 1"></div>
+  <div id="pg2" class="page-img"><img src="page_2.png" alt="Trang 2"></div>
+  <div id="pg3" class="page-img"><img src="page_3.png" alt="Trang 3"></div>
+</div>
+
+<!-- ═══════════════ RIGHT: Reference ═══════════════ -->
+<div class="ref-panel">
+
+  <div class="tip-box">
+    <strong>💡 Cách dùng:</strong> Nhấn vào từng hợp âm để xem tên nốt. Số phách
+    đỏ = phách mạnh, cam = phách vừa, xám = phách nhẹ. Tất cả nốt dùng tên Việt (Đô-Rê-Mi)
+    và tên Tây (C-D-E).
+  </div>
+
+  <!-- ─── PHÁCH (Beat guide) ─── -->
+  <div class="section-block">
+    <div class="section-header" onclick="toggle(this)">
+      <h3>🥁 Phách trong nhịp 4/4</h3>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body open">
+      <div class="beat-guide">
+        <h4>Mỗi ô nhịp có 4 phách:</h4>
+        <div class="beat-row">
+          <div><div class="beat strong">1</div><div class="beat-label">Mạnh</div></div>
+          <div><div class="beat weak">2</div><div class="beat-label">Nhẹ</div></div>
+          <div><div class="beat medium">3</div><div class="beat-label">Vừa</div></div>
+          <div><div class="beat weak">4</div><div class="beat-label">Nhẹ</div></div>
+        </div>
+        <div style="font-size:12px;color:#666;margin-top:8px;line-height:1.7;">
+          Bản này chủ yếu đánh <strong>hợp âm chặn (block chord)</strong> theo phách.<br>
+          Ô nhịp 4/4: đếm <strong>1 – 2 – 3 – 4</strong>, bấm đúng phách 1 là mạnh nhất.<br>
+          Tốc độ <strong>♩=95</strong> (phần đầu) → <strong>♩=65</strong> (phần chậm từ ô 34).
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION 1: F major ─── -->
+  <div class="section-block">
+    <div class="section-header" onclick="toggle(this)">
+      <h3>🎵 Phần 1 – Giọng Fa trưởng (F)</h3>
+      <div class="meta">
+        <span>Ô nhịp 1–33</span>
+        <span>1 dấu giáng (Sib)</span>
+        <span>Trang 1–2</span>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body open">
+      <div class="chord-grid" id="grid-F">
+
+        <div class="chord-card" onclick="pickChord(this,'grid-F')">
+          <div class="chord-name">F</div>
+          <div class="chord-notes">
+            <div class="row"><span class="label">Nốt:</span></div>
+            <div class="row"><span class="vn">Fa – La – Đô</span></div>
+            <div class="row"><span class="en">F – A – C</span></div>
+            <div class="row" style="margin-top:4px"><span class="label">Loại:</span><span style="font-size:11px">Trưởng (Major)</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-F')">
+          <div class="chord-name">Gm</div>
+          <div class="chord-notes">
+            <div class="row"><span class="label">Nốt:</span></div>
+            <div class="row"><span class="vn">Sol – Sib – Rê</span></div>
+            <div class="row"><span class="en">G – B♭ – D</span></div>
+            <div class="row" style="margin-top:4px"><span class="label">Loại:</span><span style="font-size:11px">Thứ (Minor)</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-F')">
+          <div class="chord-name">C</div>
+          <div class="chord-notes">
+            <div class="row"><span class="label">Nốt:</span></div>
+            <div class="row"><span class="vn">Đô – Mi – Sol</span></div>
+            <div class="row"><span class="en">C – E – G</span></div>
+            <div class="row" style="margin-top:4px"><span class="label">Loại:</span><span style="font-size:11px">Trưởng (Major)</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-F')">
+          <div class="chord-name">Dm</div>
+          <div class="chord-notes">
+            <div class="row"><span class="label">Nốt:</span></div>
+            <div class="row"><span class="vn">Rê – Fa – La</span></div>
+            <div class="row"><span class="en">D – F – A</span></div>
+            <div class="row" style="margin-top:4px"><span class="label">Loại:</span><span style="font-size:11px">Thứ (Minor)</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-F')">
+          <div class="chord-name">B♭</div>
+          <div class="chord-notes">
+            <div class="row"><span class="label">Nốt:</span></div>
+            <div class="row"><span class="vn">Sib – Rê – Fa</span></div>
+            <div class="row"><span class="en">B♭ – D – F</span></div>
+            <div class="row" style="margin-top:4px"><span class="label">Loại:</span><span style="font-size:11px">Trưởng (Major)</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-F')">
+          <div class="chord-name">C/E</div>
+          <div class="chord-notes">
+            <div class="row"><span class="label">Nốt:</span></div>
+            <div class="row"><span class="vn">Mi – Sol – Đô</span></div>
+            <div class="row"><span class="en">E – G – C</span></div>
+            <div class="row" style="margin-top:4px"><span class="label">Bass:</span><span style="font-size:11px">Mi (E) ở tay trái</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-F')">
+          <div class="chord-name">A♭</div>
+          <div class="chord-notes">
+            <div class="row"><span class="label">Nốt:</span></div>
+            <div class="row"><span class="vn">Lab – Đô – Mib</span></div>
+            <div class="row"><span class="en">A♭ – C – E♭</span></div>
+            <div class="row" style="margin-top:4px"><span class="label">Loại:</span><span style="font-size:11px">Trưởng (Major)</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-F')">
+          <div class="chord-name">Gsus4</div>
+          <div class="chord-notes">
+            <div class="row"><span class="label">Nốt:</span></div>
+            <div class="row"><span class="vn">Sol – Đô – Rê</span></div>
+            <div class="row"><span class="en">G – C – D</span></div>
+            <div class="row" style="margin-top:4px"><span class="label">Loại:</span><span style="font-size:11px">Sus4 (chưa giải)</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="beat-guide">
+        <h4>Vòng hợp âm chính (mm. 12–25):</h4>
+        <div style="font-size:12.5px;line-height:2;">
+          <span style="background:#fdebd0;padding:2px 8px;border-radius:4px;margin:2px;display:inline-block"><strong>F</strong> × 2 ô</span>
+          <span style="background:#d6eaf8;padding:2px 8px;border-radius:4px;margin:2px;display:inline-block"><strong>C/E → Dm</strong></span>
+          <span style="background:#d5f5e3;padding:2px 8px;border-radius:4px;margin:2px;display:inline-block"><strong>Gm → C</strong></span>
+          <span style="background:#fdebd0;padding:2px 8px;border-radius:4px;margin:2px;display:inline-block"><strong>F</strong></span>
+        </div>
+        <div style="font-size:11.5px;color:#666;margin-top:6px;">
+          Tay trái: giữ nốt trắng (whole note) suốt ô nhịp.<br>
+          Tay phải: đánh block chord 4 nốt theo từng phách.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION 2: C major ─── -->
+  <div class="section-block green">
+    <div class="section-header" onclick="toggle(this)">
+      <h3>🎵 Phần 2 – Giọng Đô trưởng (C)</h3>
+      <div class="meta">
+        <span>Ô nhịp 34–51</span>
+        <span>Không dấu hóa</span>
+        <span>Trang 2</span>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body open">
+      <div class="chord-grid" id="grid-C">
+
+        <div class="chord-card" onclick="pickChord(this,'grid-C')">
+          <div class="chord-name">C</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">Đô – Mi – Sol</span></div>
+            <div class="row"><span class="en">C – E – G</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-C')">
+          <div class="chord-name">Em</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">Mi – Sol – Si</span></div>
+            <div class="row"><span class="en">E – G – B</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-C')">
+          <div class="chord-name">Am</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">La – Đô – Mi</span></div>
+            <div class="row"><span class="en">A – C – E</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-C')">
+          <div class="chord-name">A7</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">La – Đô# – Mi – Sol</span></div>
+            <div class="row"><span class="en">A – C# – E – G</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-C')">
+          <div class="chord-name">Dm</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">Rê – Fa – La</span></div>
+            <div class="row"><span class="en">D – F – A</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-C')">
+          <div class="chord-name">Fm</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">Fa – Lab – Đô</span></div>
+            <div class="row"><span class="en">F – A♭ – C</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-C')">
+          <div class="chord-name">G</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">Sol – Si – Rê</span></div>
+            <div class="row"><span class="en">G – B – D</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-C')">
+          <div class="chord-name">E7</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">Mi – Sol# – Si – Rê</span></div>
+            <div class="row"><span class="en">E – G# – B – D</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="beat-guide">
+        <h4>Vòng hợp âm chính (mm. 37–51):</h4>
+        <div style="font-size:12.5px;line-height:2;">
+          <span style="background:#d5f5e3;padding:2px 8px;border-radius:4px;margin:2px;display:inline-block"><strong>C → Em → Am</strong></span>
+          <span style="background:#d6eaf8;padding:2px 8px;border-radius:4px;margin:2px;display:inline-block"><strong>Em → A7 → Dm → Fm</strong></span>
+          <span style="background:#d5f5e3;padding:2px 8px;border-radius:4px;margin:2px;display:inline-block"><strong>Em → Am → Dm → G</strong></span>
+        </div>
+        <div style="font-size:11.5px;color:#666;margin-top:6px;">
+          Tốc độ chậm hơn: <strong>♩ = 65</strong> từ ô 34.<br>
+          Tay trái: nốt trắng đôi (double whole note), giữ 2 ô nhịp.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION 3: D major ─── -->
+  <div class="section-block orange">
+    <div class="section-header" onclick="toggle(this)">
+      <h3>🎵 Phần 3 – Giọng Rê trưởng (D)</h3>
+      <div class="meta">
+        <span>Ô nhịp 65–75</span>
+        <span>2 dấu thăng (Fa#, Đô#)</span>
+        <span>Trang 3</span>
+      </div>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body open">
+      <div class="chord-grid" id="grid-D">
+
+        <div class="chord-card" onclick="pickChord(this,'grid-D')">
+          <div class="chord-name">D</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">Rê – Fa# – La</span></div>
+            <div class="row"><span class="en">D – F# – A</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-D')">
+          <div class="chord-name">Bm</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">Si – Rê – Fa#</span></div>
+            <div class="row"><span class="en">B – D – F#</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-D')">
+          <div class="chord-name">Em</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">Mi – Sol – Si</span></div>
+            <div class="row"><span class="en">E – G – B</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-D')">
+          <div class="chord-name">A</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">La – Đô# – Mi</span></div>
+            <div class="row"><span class="en">A – C# – E</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-D')">
+          <div class="chord-name">G</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">Sol – Si – Rê</span></div>
+            <div class="row"><span class="en">G – B – D</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-D')">
+          <div class="chord-name">F#7</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">Fa# – La# – Đô# – Mi</span></div>
+            <div class="row"><span class="en">F# – A# – C# – E</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-D')">
+          <div class="chord-name">B7</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">Si – Rê# – Fa# – La</span></div>
+            <div class="row"><span class="en">B – D# – F# – A</span></div>
+          </div>
+        </div>
+
+        <div class="chord-card" onclick="pickChord(this,'grid-D')">
+          <div class="chord-name">Gm6</div>
+          <div class="chord-notes">
+            <div class="row"><span class="vn">Sol – Sib – Rê – Mi</span></div>
+            <div class="row"><span class="en">G – B♭ – D – E</span></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="beat-guide">
+        <h4>Vòng hợp âm chính (mm. 65–75):</h4>
+        <div style="font-size:12.5px;line-height:2;">
+          <span style="background:#fef5e7;padding:2px 8px;border-radius:4px;margin:2px;display:inline-block"><strong>D → F#7 → Bm</strong></span>
+          <span style="background:#fef5e7;padding:2px 8px;border-radius:4px;margin:2px;display:inline-block"><strong>Am7 → D7 → G → Gm6</strong></span>
+          <span style="background:#fef5e7;padding:2px 8px;border-radius:4px;margin:2px;display:inline-block"><strong>Em → A → D</strong></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Chuyển tay mượt ─── -->
+  <div class="section-block" style="border-color:#8e44ad">
+    <div class="section-header" onclick="toggle(this)" style="background:#f4ecf7">
+      <h3>🤲 Chuyển tay mượt – Đảo thế hợp âm</h3>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body open">
+
+      <div class="tip-box" style="margin-bottom:12px;">
+        <strong>Cách đọc:</strong> Mỗi ô = 1 hợp âm, hiện ngón nào bấm nốt nào.
+        Ô <span style="background:#eafaf1;border:1.5px solid #27ae60;border-radius:3px;padding:1px 6px;font-size:11px;color:#1e8449;font-weight:600">xanh</span>
+        = ngón giữ nguyên không cần nhấc lên khi chuyển hợp âm.
+      </div>
+
+      <!-- F major -->
+      <div class="vl-section">
+        <h4>🎵 Phần 1 – Fa trưởng &nbsp; F → Gm → C → Dm</h4>
+        <div class="vl-flow">
+
+          <div class="fc-card">
+            <div class="fc-name">F <span class="fc-inv">thế gốc</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row"><span class="fn-num">5</span><span class="fn-name">út</span><span class="fn-note">Đô</span></div>
+              <div class="fc-row"><span class="fn-num">3</span><span class="fn-name">giữa</span><span class="fn-note">La</span></div>
+              <div class="fc-row"><span class="fn-num">1</span><span class="fn-name">cái</span><span class="fn-note">Fa</span></div>
+            </div>
+          </div>
+
+          <span class="fc-arr">→</span>
+
+          <div class="fc-card">
+            <div class="fc-name">Gm <span class="fc-inv">thế gốc</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row"><span class="fn-num">5</span><span class="fn-name">út</span><span class="fn-note">Rê</span></div>
+              <div class="fc-row"><span class="fn-num">3</span><span class="fn-name">giữa</span><span class="fn-note">Sib</span></div>
+              <div class="fc-row"><span class="fn-num">1</span><span class="fn-name">cái</span><span class="fn-note">Sol</span></div>
+            </div>
+          </div>
+
+          <span class="fc-arr">→</span>
+
+          <div class="fc-card">
+            <div class="fc-name">C <span class="fc-inv">đảo 2</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row"><span class="fn-num">5</span><span class="fn-name">út</span><span class="fn-note">Mi</span></div>
+              <div class="fc-row"><span class="fn-num">3</span><span class="fn-name">giữa</span><span class="fn-note">Đô</span></div>
+              <div class="fc-row fixed"><span class="fn-num">1</span><span class="fn-name">cái ✋</span><span class="fn-note">Sol</span></div>
+            </div>
+          </div>
+
+          <span class="fc-arr">→</span>
+
+          <div class="fc-card">
+            <div class="fc-name">Dm <span class="fc-inv">đảo 2</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row"><span class="fn-num">5</span><span class="fn-name">út</span><span class="fn-note">Fa</span></div>
+              <div class="fc-row"><span class="fn-num">3</span><span class="fn-name">giữa</span><span class="fn-note">Rê</span></div>
+              <div class="fc-row"><span class="fn-num">1</span><span class="fn-name">cái</span><span class="fn-note">La</span></div>
+            </div>
+          </div>
+
+          <span class="fc-arr">→</span>
+
+          <div class="fc-card">
+            <div class="fc-name">F <span class="fc-inv">đảo 1</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row fixed"><span class="fn-num">5</span><span class="fn-name">út ✋</span><span class="fn-note">Fa</span></div>
+              <div class="fc-row"><span class="fn-num">3</span><span class="fn-name">giữa</span><span class="fn-note">Đô</span></div>
+              <div class="fc-row fixed"><span class="fn-num">1</span><span class="fn-name">cái ✋</span><span class="fn-note">La</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- C major -->
+      <div class="vl-section">
+        <h4>🎵 Phần 2 – Đô trưởng &nbsp; Em → Am → Dm → G → C</h4>
+        <div class="vl-flow">
+
+          <div class="fc-card green">
+            <div class="fc-name">Em <span class="fc-inv">thế gốc</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row"><span class="fn-num">5</span><span class="fn-name">út</span><span class="fn-note">Si</span></div>
+              <div class="fc-row"><span class="fn-num">3</span><span class="fn-name">giữa</span><span class="fn-note">Sol</span></div>
+              <div class="fc-row"><span class="fn-num">1</span><span class="fn-name">cái</span><span class="fn-note">Mi</span></div>
+            </div>
+          </div>
+
+          <span class="fc-arr">→</span>
+
+          <div class="fc-card green">
+            <div class="fc-name">Am <span class="fc-inv">đảo 2</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row"><span class="fn-num">5</span><span class="fn-name">út</span><span class="fn-note">Đô</span></div>
+              <div class="fc-row"><span class="fn-num">3</span><span class="fn-name">giữa</span><span class="fn-note">La</span></div>
+              <div class="fc-row fixed"><span class="fn-num">1</span><span class="fn-name">cái ✋</span><span class="fn-note">Mi</span></div>
+            </div>
+          </div>
+
+          <span class="fc-arr">→</span>
+
+          <div class="fc-card green">
+            <div class="fc-name">Dm <span class="fc-inv">đảo 1</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row"><span class="fn-num">5</span><span class="fn-name">út</span><span class="fn-note">Rê</span></div>
+              <div class="fc-row fixed"><span class="fn-num">3</span><span class="fn-name">giữa ✋</span><span class="fn-note">La</span></div>
+              <div class="fc-row"><span class="fn-num">1</span><span class="fn-name">cái</span><span class="fn-note">Fa</span></div>
+            </div>
+          </div>
+
+          <span class="fc-arr">→</span>
+
+          <div class="fc-card green">
+            <div class="fc-name">G <span class="fc-inv">thế gốc</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row fixed"><span class="fn-num">5</span><span class="fn-name">út ✋</span><span class="fn-note">Rê</span></div>
+              <div class="fc-row"><span class="fn-num">3</span><span class="fn-name">giữa</span><span class="fn-note">Si</span></div>
+              <div class="fc-row"><span class="fn-num">1</span><span class="fn-name">cái</span><span class="fn-note">Sol</span></div>
+            </div>
+          </div>
+
+          <span class="fc-arr">→</span>
+
+          <div class="fc-card green">
+            <div class="fc-name">C <span class="fc-inv">đảo 2</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row"><span class="fn-num">5</span><span class="fn-name">út</span><span class="fn-note">Mi</span></div>
+              <div class="fc-row"><span class="fn-num">3</span><span class="fn-name">giữa</span><span class="fn-note">Đô</span></div>
+              <div class="fc-row fixed"><span class="fn-num">1</span><span class="fn-name">cái ✋</span><span class="fn-note">Sol</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- D major -->
+      <div class="vl-section">
+        <h4>🎵 Phần 3 – Rê trưởng &nbsp; D → Bm → Em → A → D</h4>
+        <div class="vl-flow">
+
+          <div class="fc-card orange">
+            <div class="fc-name">D <span class="fc-inv">thế gốc</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row"><span class="fn-num">5</span><span class="fn-name">út</span><span class="fn-note">La</span></div>
+              <div class="fc-row"><span class="fn-num">3</span><span class="fn-name">giữa</span><span class="fn-note">Fa#</span></div>
+              <div class="fc-row"><span class="fn-num">1</span><span class="fn-name">cái</span><span class="fn-note">Rê</span></div>
+            </div>
+          </div>
+
+          <span class="fc-arr">→</span>
+
+          <div class="fc-card orange">
+            <div class="fc-name">Bm <span class="fc-inv">đảo 1</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row"><span class="fn-num">5</span><span class="fn-name">út</span><span class="fn-note">Si</span></div>
+              <div class="fc-row fixed"><span class="fn-num">3</span><span class="fn-name">giữa ✋</span><span class="fn-note">Fa#</span></div>
+              <div class="fc-row fixed"><span class="fn-num">1</span><span class="fn-name">cái ✋</span><span class="fn-note">Rê</span></div>
+            </div>
+          </div>
+
+          <span class="fc-arr">→</span>
+
+          <div class="fc-card orange">
+            <div class="fc-name">Em <span class="fc-inv">thế gốc</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row fixed"><span class="fn-num">5</span><span class="fn-name">út ✋</span><span class="fn-note">Si</span></div>
+              <div class="fc-row"><span class="fn-num">3</span><span class="fn-name">giữa</span><span class="fn-note">Sol</span></div>
+              <div class="fc-row"><span class="fn-num">1</span><span class="fn-name">cái</span><span class="fn-note">Mi</span></div>
+            </div>
+          </div>
+
+          <span class="fc-arr">→</span>
+
+          <div class="fc-card orange">
+            <div class="fc-name">A <span class="fc-inv">đảo 2</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row"><span class="fn-num">5</span><span class="fn-name">út</span><span class="fn-note">Đô#</span></div>
+              <div class="fc-row"><span class="fn-num">3</span><span class="fn-name">giữa</span><span class="fn-note">La</span></div>
+              <div class="fc-row fixed"><span class="fn-num">1</span><span class="fn-name">cái ✋</span><span class="fn-note">Mi</span></div>
+            </div>
+          </div>
+
+          <span class="fc-arr">→</span>
+
+          <div class="fc-card orange">
+            <div class="fc-name">D <span class="fc-inv">đảo 1</span></div>
+            <div class="fc-fingers">
+              <div class="fc-row"><span class="fn-num">5</span><span class="fn-name">út</span><span class="fn-note">Rê</span></div>
+              <div class="fc-row fixed"><span class="fn-num">3</span><span class="fn-name">giữa ✋</span><span class="fn-note">La</span></div>
+              <div class="fc-row"><span class="fn-num">1</span><span class="fn-name">cái</span><span class="fn-note">Fa#</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div style="background:#f0f0f0;border-radius:8px;padding:10px 14px;font-size:12px;line-height:1.8;margin-top:4px;">
+        <strong>3 thế hợp âm:</strong> &nbsp;
+        <strong>Thế gốc</strong> = nốt 1 ở dưới (Đô–Mi–Sol) &nbsp;·&nbsp;
+        <strong>Đảo 1</strong> = nốt 3 ở dưới (Mi–Sol–Đô) &nbsp;·&nbsp;
+        <strong>Đảo 2</strong> = nốt 5 ở dưới (Sol–Đô–Mi)
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── Bảng quy đổi tên nốt ─── -->
+  <div class="section-block" style="border-color:#9b59b6">
+    <div class="section-header" onclick="toggle(this)" style="background:#f5eef8">
+      <h3>📖 Bảng tên nốt Việt ↔ Tây</h3>
+      <span class="chevron">▼</span>
+    </div>
+    <div class="section-body">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="background:#9b59b6;color:white;">
+            <th style="padding:7px 10px;text-align:left;">Tên Việt</th>
+            <th style="padding:7px 10px;text-align:left;">Tên Tây</th>
+            <th style="padding:7px 10px;text-align:left;">Phím đàn</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:#fdf2f8"><td style="padding:6px 10px"><b>Đô</b></td><td>C</td><td>Trắng, sau 2 phím đen</td></tr>
+          <tr><td style="padding:6px 10px"><b>Đô#</b></td><td>C# / D♭</td><td>Đen đầu tiên (nhóm 2)</td></tr>
+          <tr style="background:#fdf2f8"><td style="padding:6px 10px"><b>Rê</b></td><td>D</td><td>Trắng, giữa 2 phím đen</td></tr>
+          <tr><td style="padding:6px 10px"><b>Mi</b></td><td>E</td><td>Trắng, sau nhóm 2 đen</td></tr>
+          <tr style="background:#fdf2f8"><td style="padding:6px 10px"><b>Fa</b></td><td>F</td><td>Trắng, trước nhóm 3 đen</td></tr>
+          <tr><td style="padding:6px 10px"><b>Fa#</b></td><td>F# / G♭</td><td>Đen đầu tiên (nhóm 3)</td></tr>
+          <tr style="background:#fdf2f8"><td style="padding:6px 10px"><b>Sol</b></td><td>G</td><td>Trắng, giữa nhóm 3 đen</td></tr>
+          <tr><td style="padding:6px 10px"><b>La</b></td><td>A</td><td>Trắng, gần cuối nhóm 3</td></tr>
+          <tr style="background:#fdf2f8"><td style="padding:6px 10px"><b>Sib / Lab</b></td><td>B♭ / A♭</td><td>Đen cuối nhóm 3</td></tr>
+          <tr><td style="padding:6px 10px"><b>Si</b></td><td>B</td><td>Trắng cuối cùng trước Đô</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /ref-panel -->
+</div><!-- /layout -->
+
+<script>
+function showPage(n, btn) {
+  document.querySelectorAll('.page-img').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.page-tabs button').forEach(el => el.classList.remove('active'));
+  document.getElementById('pg'+n).classList.add('active');
+  btn.classList.add('active');
+}
+
+function toggle(header) {
+  const body = header.nextElementSibling;
+  const ch = header.querySelector('.chevron');
+  if (body.classList.contains('open')) {
+    body.classList.remove('open');
+    ch.style.transform = 'rotate(-90deg)';
+  } else {
+    body.classList.add('open');
+    ch.style.transform = 'rotate(0deg)';
+  }
+}
+
+function pickChord(card, gridId) {
+  document.querySelectorAll('#'+gridId+' .chord-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+}
+</script>
+
+</body>
+</html>
